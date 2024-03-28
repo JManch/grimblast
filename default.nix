@@ -1,15 +1,16 @@
-{
-  lib,
-  stdenvNoCC,
-  makeWrapper,
-  scdoc,
-  coreutils,
-  grim,
-  jq,
-  libnotify,
-  slurp,
-  wl-clipboard,
-  hyprland ? null,
+{ lib
+, stdenvNoCC
+, makeWrapper
+, scdoc
+, coreutils
+, grim
+, jq
+, gthumb
+, libnotify
+, slurp
+, wl-clipboard
+, hyprland ? null
+,
 }:
 stdenvNoCC.mkDerivation {
   pname = "grimblast";
@@ -25,7 +26,7 @@ stdenvNoCC.mkDerivation {
     scdoc
   ];
 
-  makeFlags = ["PREFIX=$(out)"];
+  makeFlags = [ "PREFIX=$(out)" ];
 
   postInstall = ''
     wrapProgram $out/bin/grimblast --prefix PATH ':' \
@@ -36,6 +37,7 @@ stdenvNoCC.mkDerivation {
         libnotify
         slurp
         wl-clipboard
+        gthumb
       ]
       ++ lib.optional (hyprland != null) hyprland)}"
   '';
@@ -44,7 +46,7 @@ stdenvNoCC.mkDerivation {
     description = "A helper for screenshots within Hyprland, based on grimshot";
     license = licenses.mit;
     platforms = platforms.unix;
-    maintainers = with maintainers; [misterio77];
+    maintainers = with maintainers; [ misterio77 ];
     mainProgram = "grimblast";
   };
 }

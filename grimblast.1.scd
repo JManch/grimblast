@@ -6,7 +6,7 @@ grimblast - a helper for screenshots within hyprland
 
 # SYNOPSIS
 
-*grimblast* [--notify] [--cursor] [--freeze] [--wait N] [--scale <scale>] (copy|save|copysave|edit) [TARGET] [FILE]++
+*grimblast* [--notify] [--cursor] [--freeze] (copy|save) [TARGET] [FILE]++
 *grimblast* check++
 *grimblast* usage
 
@@ -21,33 +21,14 @@ grimblast - a helper for screenshots within hyprland
 *--freeze*
 	Freezes the screen before area selection.
 
-*--wait N*
-	Wait for N seconds before taking a screenshot. Waits after any
-	manual selection is made. Recommended to combine with --notify in
-	order to know when the screenshot has been taken.
-
-*--scale <scale>*
-	Passes the `-s` argument to `grim`.
-
 *save*
-	Save the screenshot into a regular file. Grimblast will write image
-	files to *XDG_SCREENSHOTS_DIR* if this is set (or defined
-	in *user-dirs.dir*), or otherwise fall back to *XDG_PICTURES_DIR*.
+	Save the screenshot into a regular file and copy into the clipboard.
+	Grimblast will write image files to *XDG_SCREENSHOTS_DIR* if this is set (or
+	defined in *user-dirs.dir*), or otherwise fall back to *XDG_PICTURES_DIR*.
 	Set FILE to '-' to pipe the output to STDOUT.
 
 *copy*
 	Copy the screenshot data (as image/png) into the clipboard.
-
-*copysave* 
-	Combine the previous 2 options.
-
-*edit*
-	Open screenshot in the image editor of your choice. The default is
-	gimp, but you can set a different one with the enviroment variable
-	$GRIMBLAST_EDITOR. Example: `export GRIMBLAST_EDITOR=gimp`.
-
-*check*
-	Verify whether the required tools are installed.
 
 *usage*
 	Show help message.
@@ -70,10 +51,10 @@ _screen_
 	Captures the entire screen. This includes all visible outputs.
 
 _area_
-	Allows manually selecting a rectangular region or window (by clicking on it),
-	and captures that.
-	Slurp can be customized by setting its arguments in the *SLURP_ARGS*
-	environment variable.
+	Allows manually selecting a rectangular region and captures that.
+
+_window_
+	Allows manually selecting a window (by clicking it) and captures that.
 
 _output_
 	Captures the currently active output.
