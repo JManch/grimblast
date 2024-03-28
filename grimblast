@@ -103,7 +103,7 @@ resetFade() {
 
 killHyprpicker() {
   if [ ! $HYPRPICKER_PID -eq -1 ]; then
-    kill $HYPRPICKER_PID
+    kill $HYPRPICKER_PID || true
   fi
 }
 
@@ -139,7 +139,7 @@ elif [ "$SUBJECT" = "output" ]; then
   OUTPUT=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true)' | jq -r '.name')
 elif [ "$SUBJECT" = "area" ] || [ "$SUBJECT" = "window" ]; then
   if [ "$FREEZE" = "yes" ] && [ "$(command -v "hyprpicker")" ] >/dev/null 2>&1; then
-    hyprpicker -r -z &
+    hyprpicker -r -z >/dev/null &
     sleep 0.2
     HYPRPICKER_PID=$!
   fi
