@@ -9,7 +9,8 @@
 , libnotify
 , slurp
 , wl-clipboard
-, hyprland ? null
+, hyprland
+, hyprpicker
 ,
 }:
 stdenvNoCC.mkDerivation {
@@ -33,6 +34,8 @@ stdenvNoCC.mkDerivation {
       "${lib.makeBinPath ([
         coreutils
         grim
+        hyprland
+        hyprpicker
         jq
         libnotify
         slurp
