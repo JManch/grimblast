@@ -18,6 +18,14 @@
 ## hyprctl equivalents.
 ## https://github.com/swaywm/sway/blob/master/contrib/grimshot
 
+grimblastInstanceCheck="${XDG_RUNTIME_DIR:-$XDG_CACHE_DIR:-$HOME/.cache}/grimblast.lock"
+if [ -e "$grimblastInstanceCheck" ]; then
+  exit 2
+else
+  touch "$grimblastInstanceCheck"
+fi
+trap "rm -f '$grimblastInstanceCheck'" EXIT
+
 getTargetDirectory() {
   test -f "${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs" &&
     . "${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs"
@@ -95,12 +103,6 @@ notifyError() {
   fi
 }
 
-resetFade() {
-  if [[ -n $FADELAYERS ]]; then
-    hyprctl keyword animation "$FADELAYERS" >/dev/null
-  fi
-}
-
 killHyprpicker() {
   if [ ! $HYPRPICKER_PID -eq -1 ]; then
     kill $HYPRPICKER_PID || true
@@ -124,9 +126,11 @@ takeScreenshot() {
     grim ${CURSOR:+-c} "$FILE" || die "Unable to invoke grim"
   else
     grim ${CURSOR:+-c} -g "$GEOM" "$FILE" || die "Unable to invoke grim"
-    resetFade
   fi
-  wl-copy --type image/png < "$FILE" || die "Clipboard error"
+
+  if [ "$FILE" != "-" ]; then
+    wl-copy --type image/png < "$FILE" || die "Clipboard error"
+  fi
 }
 
 if [ "$SUBJECT" = "active" ]; then
@@ -144,14 +148,14 @@ elif [ "$SUBJECT" = "area" ] || [ "$SUBJECT" = "window" ]; then
     HYPRPICKER_PID=$!
   fi
 
-  # get fade & fadeOut animation and unset it
+  # disable animation for layer namespace "selection" (slurp)
   # this removes the black border seen around screenshots
-  FADELAYERS="$(hyprctl -j animations | jq -jr '.[0][] | select(.name == "fadeLayers") | .name, ",", (if .enabled == true then "1" else "0" end), ",", (.speed|floor), ",", .bezier')"
-  hyprctl keyword animation 'fadeLayers,0,1,default' >/dev/null
+  hyprctl keyword layerrule "noanim,selection" >/dev/null
 
   if [ "$SUBJECT" = "window" ]; then
-    WORKSPACES="$(hyprctl monitors -j | jq -r 'map(.activeWorkspace.id)')"
-    WINDOWS="$(hyprctl clients -j | jq -r --argjson workspaces "$WORKSPACES" 'map(select([.workspace.id] | inside($workspaces)))')"
+    FULLSCREEN_WORKSPACES="$(hyprctl workspaces -j | jq -r 'map(select(.hasfullscreen) | .id)')"
+    WORKSPACES="$(hyprctl monitors -j | jq -r '[(foreach .[] as $monitor (0; if $monitor.specialWorkspace.name == "" then $monitor.activeWorkspace else $monitor.specialWorkspace end)).id]')"
+    WINDOWS="$(hyprctl clients -j | jq -r --argjson workspaces "$WORKSPACES" --argjson fullscreenWorkspaces "$FULLSCREEN_WORKSPACES" 'map((select(([.workspace.id] | inside($workspaces)) and ([.workspace.id] | inside($fullscreenWorkspaces) | not) or .fullscreen > 0)))')"
     # shellcheck disable=2086 # if we don't split, spaces mess up slurp
     GEOM=$(echo "$WINDOWS" | jq -r '.[] | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' | slurp -r $SLURP_ARGS)
   else
@@ -161,7 +165,6 @@ elif [ "$SUBJECT" = "area" ] || [ "$SUBJECT" = "window" ]; then
   # Check if user exited slurp without selecting the area
   if [ -z "$GEOM" ]; then
     killHyprpicker
-    resetFade
     exit 1
   fi
 else
@@ -174,15 +177,17 @@ if [ "$ACTION" = "copy" ]; then
   MESSAGE="Image copied to the clipboard"
 fi
 
-if $(takeScreenshot "$FILE" "$GEOM" "$OUTPUT"); then
-  $(
-    NOTIF_ACTION=$(notifyOk "Screenshot Saved" "$MESSAGE" -i "$FILE" --action 'default=Edit image')
-    if [ "$NOTIF_ACTION" = "default" ]; then
-      gthumb "$FILE" &
-    elif [ "$ACTION" = "copy" ]; then
-      rm "$FILE"
-    fi
-  ) &
+if takeScreenshot "$FILE" "$GEOM" "$OUTPUT"; then
+  if [ "$FILE" != "-" ]; then
+    $(
+      NOTIF_ACTION=$(notifyOk "Screenshot Saved" "$MESSAGE" -i "$FILE" --action 'default=Edit image')
+      if [ "$NOTIF_ACTION" = "default" ]; then
+        gthumb "$FILE" &
+      elif [ "$ACTION" = "copy" ]; then
+        rm "$FILE"
+      fi
+    ) &
+  fi
 else
   die "Error taking screenshot with grim"
 fi
